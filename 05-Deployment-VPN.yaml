@@ -1,0 +1,90 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ipsec-vpn-server
+  namespace: vpn
+  labels:
+    app: ipsec-vpn-server
+    component: vpn-server
+spec:
+  replicas: 1
+  strategy: # ramped doesn’t require any extra step (kubectl apply is enough)
+    type: RollingUpdate    
+    rollingUpdate:      
+       maxSurge: 50% # how many pods we can add at a time      
+       maxUnavailable: 0  
+  selector:
+    matchLabels:
+      app: ipsec-vpn-server
+      component: vpn-server
+  template:
+    metadata:
+      labels:
+        app: ipsec-vpn-server
+        component: vpn-server
+    spec:
+######################################################################
+# Uncomment if you need some Affinities with another components
+######################################################################
+      #affinity: 
+      #  podAffinity:
+      #    requiredDuringSchedulingIgnoredDuringExecution:
+      #    - labelSelector:
+      #        matchExpressions:
+      #        - key: app
+      #          operator: In
+      #          values:
+      #          - kafka
+      #      topologyKey: "kubernetes.io/hostname"      
+      containers:
+      - name: ipsec-vpn-server     
+        image: jpradoar/strongswan-vpn:latest
+        securityContext:          
+           privileged: true # I know it. Is not the best security practice but, for this case, is required.
+######################################################################           
+# Uncomment if you need your own rules        
+######################################################################
+        lifecycle:
+          postStart:
+            exec:
+              command:
+                - "sh"
+                - "-c"
+                - | 
+                  ip route add 192.168.99.0/24 dev eth0;
+                  ip route add 192.168.98.0/24 dev eth0;  
+                  ipsec restart; 
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 500
+          name: vpnisakmp
+        - containerPort: 4500
+          name: vpnike
+        resources:
+          limits:
+            cpu: 700m
+            memory: 700Mi
+          requests:
+            cpu: 250m
+            memory: 250Mi
+        #readinessProbe:
+        #  httpGet:
+        #    path: /
+        #    port: xxx
+        volumeMounts:
+            - name: ipsec-conf
+              mountPath: /etc/ipsec.conf
+              subPath: ipsec.conf
+              readOnly: false
+            - name: ipsec-secret
+              mountPath: /etc/ipsec.secrets
+              subPath: ipsec.secrets
+              readOnly: false              
+      volumes:
+        - name: ipsec-conf
+          configMap:
+            name: ipsec-config
+        - name: ipsec-secret
+          configMap:
+            name: ipsec-config-secret
