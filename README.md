@@ -3,6 +3,13 @@
 
 <div align="center"><h2>General Info</h2></div>
 
+
+
+<br>
+<div align="center"><img src="img/arquitectura-vpn.png" ></div>
+<br>
+
+
 ### POD: 
 	DNS: clientvpn.mydomain.com  > foo.elb.xx-zzz-n.amazonaws.com
 	LAN: 192.168.1.18
@@ -25,6 +32,10 @@
 	service/ipsec-vpn-server-aws-nlb   LoadBalancer   10.100.86.159   foo.elb.xx-zzz-n.amazonaws.com   500:31502/UDP,4500:30413/UDP   38m
 
 <br>
+
+
+
+
 
 <div align="center"><h2>Customer site</h2></div>
 
